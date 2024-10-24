@@ -1,0 +1,32 @@
+FROM rust:1.81.0
+WORKDIR /app
+
+# 创建 sources.list 文件并配置阿里云镜像源
+RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
+    && echo "deb http://mirrors.aliyun.com/debian/ bookworm-updates main non-free contrib" >> /etc/apt/sources.list \
+    && echo "deb http://mirrors.aliyun.com/debian-security bookworm-security main non-free contrib" >> /etc/apt/sources.list
+
+# 安装必要的工具并配置镜像源
+RUN apt-get update \
+    && apt-get install -y wget gnupg \
+    && wget -O /etc/apt/keyrings/debian-archive-keyring.gpg https://mirrors.aliyun.com/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2023.3+deb12u1_all.deb \
+    && dpkg -i /etc/apt/keyrings/debian-archive-keyring.gpg \
+    && rm /etc/apt/keyrings/debian-archive-keyring.gpg \
+    && apt-get update \
+    && apt-get install -y lld clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制 Cargo.toml 和 Cargo.lock （如果存在）
+COPY Cargo.toml Cargo.lock* ./
+
+# 创建一个虚拟的构建项目，这将缓存依赖项
+RUN mkdir src \
+    && echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs \
+    && cargo build --release \
+    && rm -rf src
+
+COPY . .
+ENV SQLX_OFFLINE true
+RUN cargo build --release
+ENV APP_ENVIRONMENT production
+ENTRYPOINT ["./target/release/zero2prod"]

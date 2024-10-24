@@ -1,0 +1,45 @@
+
+## Dockerfile
+```
+# 修改 ENTRYPOINT 来将日志输出到文件
+ENTRYPOINT ["sh", "-c", "./zero2prod > /var/log/zero2prod/app.log 2>&1"]
+```
+
+
+```
+docker build --tag zero2prod -f Dockerfile4 .
+
+docker run -d --name zero2prod -p 8000:8000  -v /root/log/zero2prod:/var/log/zero2prod  -v $(pwd)/configuration:/app/configuration zero2prod
+
+
+```
+
+如果你想在运行容器时仍然能看到日志输出到控制台，同时又将日志保存到文件，你可以修改 ENTRYPOINT 如下
+
+ENTRYPOINT ["sh", "-c", "./target/release/zero2prod 2>&1 | tee /var/log/zero2prod/app.log"]
+
+
+postmark
+curl "https://api.postmarkapp.com/email" \
+-X POST \
+-H "Accept: application/json" \
+-H "Content-Type: application/json" \
+-H "X-Postmark-Server-Token: server token" \
+-d '{
+"From": "sender@example.com",
+"To": "receiver@example.com",
+"Subject": "Postmark test",
+"TextBody": "Hello dear Postmark user.",
+"HtmlBody": "<html><body><strong>Hello</strong> dear Postmark user.</body></html>"
+}'
+
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+{
+"To": "receiver@example.com",
+"SubmittedAt": "2021-01-12T07:25:01.4178645-05:00",
+"MessageID": "0a129aee-e1cd-480d-b08d-4f48548ff48d",
+"ErrorCode": 0,
+"Message": "OK"
+}
